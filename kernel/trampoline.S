@@ -138,6 +138,7 @@ userret:
         ld t4, 264(a0)
         ld t5, 272(a0)
         ld t6, 280(a0)
+        # signal_ret_pc at 288 is not restored to user, it's kernel-managed
 
 	# restore user a0, and save TRAPFRAME in sscratch
         csrrw a0, sscratch, a0

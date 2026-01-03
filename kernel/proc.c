@@ -148,6 +148,8 @@ found:
     release(&p->lock);
     return NULL;
   }
+  // Initialize trapframe to zero
+  memset(p->trapframe, 0, sizeof(struct trapframe));
 
   // An empty user page table.
   // And an identical kernel page table for this proc.

@@ -21,6 +21,8 @@
 #define SIGSTOP   19  // Stop process
 #define SIGTSTP   20  // Stop typed at terminal
 #define SIGCONT   18  // Continue if stopped
+#define SIGCHLD   17  // Child stopped or terminated
+#define SIGWINCH  28  // Window resize signal
 
 #define SIG_DFL  ((void (*)(int))0)   // Default signal handling
 #define SIG_IGN  ((void (*)(int))1)   // Ignore signal

@@ -8,6 +8,7 @@
 #include "include/plic.h"
 #include "include/trap.h"
 #include "include/syscall.h"
+#include "include/signal.h"
 #include "include/printf.h"
 #include "include/console.h"
 #include "include/timer.h"
@@ -69,6 +70,13 @@ usertrap(void)
   // save user program counter.
   p->trapframe->epc = r_sepc();
 
+  // Check if we're returning from a signal handler
+  if (p->trapframe->signal_ret_pc != 0) {
+    // Restore the original PC
+    p->trapframe->epc = p->trapframe->signal_ret_pc;
+    p->trapframe->signal_ret_pc = 0;
+  }
+
   if(r_scause() == 8){
     // system call
     if(p->killed)
@@ -110,6 +118,10 @@ usertrap(void)
 
   if(p->killed)
     exit(-1);
+
+  // Process pending signals before returning to user space
+  // Handle at most one signal per trap to avoid starvation
+  process_signals();
 
   // give up the CPU if this is a timer interrupt.
   // handle_time_slice() will decrement time slice and demote if needed.
@@ -214,6 +226,103 @@ kerneltrap() {
   // so restore trap registers for use by kernelvec.S's sepc instruction.
   w_sepc(sepc);
   w_sstatus(sstatus);
+}
+
+// Process pending signals for a user process
+// Returns 1 if a signal was handled, 0 otherwise
+int
+process_signals(void)
+{
+  struct proc *p = myproc();
+  if (p == 0)
+    return 0;
+
+  acquire(&p->lock);
+
+  // Check if there are any pending signals (not blocked by mask)
+  uint64 pending = p->sig_pending & ~p->sig_mask;
+  if (pending == 0) {
+    release(&p->lock);
+    return 0;
+  }
+
+  // Find the first pending signal (lowest bit set)
+  int sig = 0;
+  for (int i = 0; i < NSIG; i++) {
+    if (pending & (1UL << i)) {
+      sig = i + 1;  // Signal numbers start at 1
+      break;
+    }
+  }
+
+  if (sig == 0) {
+    release(&p->lock);
+    return 0;
+  }
+
+  // Clear the pending bit
+  p->sig_pending &= ~(1UL << (sig - 1));
+  release(&p->lock);
+
+  // Handle special signals first
+  if (sig == SIGKILL) {
+    p->killed = 1;
+    return 1;
+  }
+
+  if (sig == SIGSTOP) {
+    // Stop the process - put it to sleep
+    acquire(&p->lock);
+    if (p->state == RUNNING) {
+      p->state = SLEEPING;
+      p->chan = (void*)1;  // Use a non-zero chan to indicate signal stop
+    }
+    release(&p->lock);
+    return 1;
+  }
+
+  if (sig == SIGCONT) {
+    // Continue a stopped process
+    acquire(&p->lock);
+    if (p->state == SLEEPING && p->chan == (void*)1) {
+      p->state = RUNNABLE;
+      p->chan = 0;
+    }
+    release(&p->lock);
+    return 1;
+  }
+
+  // Get the handler for this signal
+  uint64 handler = p->sig_handlers[sig];
+
+  if (handler == (uint64)SIG_IGN) {
+    // Signal is ignored
+    return 1;
+  }
+
+  if (handler == (uint64)SIG_DFL) {
+    // Default handling
+    // For most signals, default is to terminate the process
+    // Some signals should be ignored by default
+    if (sig == SIGCHLD || sig == SIGCONT || sig == SIGWINCH) {
+      return 1;
+    }
+    // Default action: terminate process
+    p->killed = 1;
+    return 1;
+  }
+
+  // User-defined handler
+  // Set up trapframe to call the handler
+  // When the handler returns, execution will continue from signal_ret_pc
+  if (p->trapframe->signal_ret_pc == 0) {
+    // Save current PC and set up to call handler
+    p->trapframe->signal_ret_pc = p->trapframe->epc;
+    p->trapframe->epc = handler;
+    p->trapframe->a0 = sig;  // Pass signal number as argument
+  }
+
+  return 1;
 }
 
 // Check if it's an external/software interrupt, 
