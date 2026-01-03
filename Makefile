@@ -217,6 +217,7 @@ UPROGS=\
 	$U/_sigtest1\
 	$U/_sigtest2\
 	$U/_settimeddemo\
+	$U/_cachetest\
 
 	# $U/_forktest\
 	# $U/_ln\
