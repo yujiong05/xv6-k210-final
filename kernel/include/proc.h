@@ -65,6 +65,10 @@ struct proc {
   char name[16];               // Process name (debugging)
   int tmask;                   // trace mask
   int priority;                // Process priority (0-100, higher = more important)
+  // Multi-level Feedback Queue (MLFQ) fields
+  int queue_level;             // Current queue level (0=highest, 2=lowest)
+  int time_slice;              // Remaining time slices in current queue
+  int ticks_used;              // Total ticks used by this process
 };
 
 void            reg_info(void);
@@ -88,6 +92,7 @@ int             wait(uint64);
 void            wakeup(void*);
 void            yield(void);
 int             higher_priority_ready(void);
+int             handle_time_slice(void);
 int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 void            procdump(void);

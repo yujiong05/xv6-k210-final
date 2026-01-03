@@ -111,9 +111,12 @@ usertrap(void)
   if(p->killed)
     exit(-1);
 
-  // give up the CPU if this is a timer interrupt AND there's a higher priority process.
-  if(which_dev == 2 && higher_priority_ready())
-    yield();
+  // give up the CPU if this is a timer interrupt.
+  // handle_time_slice() will decrement time slice and demote if needed.
+  if(which_dev == 2) {
+    if(handle_time_slice() || higher_priority_ready())
+      yield();
+  }
 
   usertrapret();
 }
@@ -189,9 +192,12 @@ kerneltrap() {
   }
   // printf("which_dev: %d\n", which_dev);
 
-  // give up the CPU if this is a timer interrupt AND there's a higher priority process.
-  if(which_dev == 2 && myproc() != 0 && myproc()->state == RUNNING && higher_priority_ready()) {
-    yield();
+  // give up the CPU if this is a timer interrupt.
+  // handle_time_slice() will decrement time slice and demote if needed.
+  if(which_dev == 2 && myproc() != 0 && myproc()->state == RUNNING) {
+    if(handle_time_slice() || higher_priority_ready()) {
+      yield();
+    }
   }
   // the yield() may have caused some traps to occur,
   // so restore trap registers for use by kernelvec.S's sepc instruction.

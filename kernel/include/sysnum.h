@@ -34,5 +34,7 @@
 #define SYS_shmat       30
 #define SYS_shmdt       31
 #define SYS_shmctl      32
+#define SYS_getqueuelevel 33  // Get process MLFQ queue level
+#define SYS_gettimeslice  34  // Get process remaining time slice
 
 #endif

@@ -167,6 +167,11 @@ found:
   // Set default priority
   p->priority = 50;  // Default priority (medium)
 
+  // Initialize MLFQ fields
+  p->queue_level = 0;        // New processes start at highest priority queue
+  p->time_slice = 0;         // Will be set by scheduler when first run
+  p->ticks_used = 0;
+
   return p;
 }
 
@@ -194,6 +199,10 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+  // Reset MLFQ fields
+  p->queue_level = 0;
+  p->time_slice = 0;
+  p->ticks_used = 0;
 }
 
 // Create a user page table for a given process,
@@ -532,7 +541,7 @@ wait(uint64 addr)
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
 // Scheduler never returns.  It loops, doing:
-//  - choose a process to run (highest priority first).
+//  - choose a process to run using MLFQ: highest queue level first.
 //  - swtch to start running that process.
 //  - eventually that process transfers control
 //    via swtch back to the scheduler.
@@ -540,7 +549,6 @@ void
 scheduler(void)
 {
   struct proc *p;
-  struct proc *highest_prio_proc = NULL;
   struct cpu *c = mycpu();
   extern pagetable_t kernel_pagetable;
 
@@ -550,40 +558,47 @@ scheduler(void)
     intr_on();
 
     int found = 0;
-    int highest_priority = -1;
 
-    // First pass: find the highest priority runnable process
-    for(p = proc; p < &proc[NPROC]; p++) {
-      acquire(&p->lock);
-      if(p->state == RUNNABLE && p->priority > highest_priority) {
-        highest_priority = p->priority;
-      }
-      release(&p->lock);
-    }
+    // MLFQ: Try each queue level from highest (0) to lowest (MFQ_NQUEUES-1)
+    for(int queue = 0; queue < MFQ_NQUEUES; queue++) {
+      for(p = proc; p < &proc[NPROC]; p++) {
+        acquire(&p->lock);
+        if(p->state == RUNNABLE && p->queue_level == queue) {
+          // Switch to chosen process.
+          p->state = RUNNING;
+          c->proc = p;
 
-    // Second pass: run the highest priority process
-    for(p = proc; p < &proc[NPROC]; p++) {
-      acquire(&p->lock);
-      if(p->state == RUNNABLE && p->priority == highest_priority) {
-        // Switch to chosen process.  It is the process's job
-        // to release its lock and then reacquire it
-        // before jumping back to us.
-        p->state = RUNNING;
-        c->proc = p;
-        w_satp(MAKE_SATP(p->kpagetable));
-        sfence_vma();
-        swtch(&c->context, &p->context);
-        w_satp(MAKE_SATP(kernel_pagetable));
-        sfence_vma();
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
+          // Initialize/reset time slice based on queue level
+          // This happens when process starts running after:
+          // - First being created (time_slice initialized to 0)
+          // - Being demoted (time_slice set to 0 by handle_time_slice)
+          // - Returning from sleep
+          if(p->time_slice <= 0) {
+            switch(p->queue_level) {
+              case 0: p->time_slice = MFQ_TIME_SLICE_0; break;
+              case 1: p->time_slice = MFQ_TIME_SLICE_1; break;
+              case 2: p->time_slice = MFQ_TIME_SLICE_2; break;
+            }
+          }
 
-        found = 1;
+          w_satp(MAKE_SATP(p->kpagetable));
+          sfence_vma();
+          swtch(&c->context, &p->context);
+          w_satp(MAKE_SATP(kernel_pagetable));
+          sfence_vma();
+          // Process is done running for now.
+          // It should have changed its p->state before coming back.
+          c->proc = 0;
+
+          found = 1;
+          release(&p->lock);
+          break;  // Only run one process per iteration
+        }
         release(&p->lock);
-        break;  // Only run one process per iteration
       }
-      release(&p->lock);
+      if(found) {
+        break;  // Found a process in this queue, don't check lower queues
+      }
     }
 
     if(found == 0) {
@@ -631,7 +646,7 @@ yield(void)
   release(&p->lock);
 }
 
-// Check if there's another runnable process (for time-slicing).
+// Check if there's a process in a higher queue level (for MLFQ).
 // Returns 1 if yes, 0 if no.
 // Called with interrupts enabled.
 int
@@ -643,19 +658,55 @@ higher_priority_ready(void)
   if (cur == 0)
     return 0;
 
-  // Look for any other runnable process
+  // Look for runnable processes in higher priority queues
   for(p = proc; p < &proc[NPROC]; p++){
     if(p == cur)
       continue;  // Skip current process
     acquire(&p->lock);
-    if(p->state == RUNNABLE) {
+    if(p->state == RUNNABLE && p->queue_level < cur->queue_level) {
       release(&p->lock);
-      return 1;  // Found another runnable process
+      return 1;  // Found a process in a higher queue
     }
     release(&p->lock);
   }
 
-  return 0;  // No other runnable process
+  return 0;  // No higher queue process found
+}
+
+// Handle time slice expiration for MLFQ.
+// Decrements time slice and demotes process to lower queue if needed.
+// Returns 1 if process should yield, 0 otherwise.
+int
+handle_time_slice(void)
+{
+  struct proc *p = myproc();
+
+  if (p == 0)
+    return 0;
+
+  acquire(&p->lock);
+
+  // Decrement time slice
+  p->time_slice--;
+  p->ticks_used++;
+
+  // If time slice exhausted, demote to lower queue
+  if(p->time_slice <= 0) {
+    // Set time_slice to 0 to indicate it needs reset by scheduler
+    p->time_slice = 0;
+
+    // Only demote if not already at lowest queue
+    if(p->queue_level < MFQ_NQUEUES - 1) {
+      p->queue_level++;
+    }
+    // Note: scheduler will reset time_slice based on new queue_level
+
+    release(&p->lock);
+    return 1;  // Should yield to give other processes a chance
+  }
+
+  release(&p->lock);
+  return 0;
 }
 
 // A fork child's very first scheduling by scheduler()

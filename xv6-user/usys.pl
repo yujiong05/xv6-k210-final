@@ -43,6 +43,8 @@ entry("sysinfo");
 entry("rename");
 entry("setpriority");
 entry("getpriority");
+entry("getqueuelevel");
+entry("gettimeslice");
 entry("shmget");
 entry("shmat");
 entry("shmdt");

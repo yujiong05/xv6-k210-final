@@ -179,3 +179,17 @@ sys_getpriority(void)
 {
   return myproc()->priority;
 }
+
+// Get process MLFQ queue level
+uint64
+sys_getqueuelevel(void)
+{
+  return myproc()->queue_level;
+}
+
+// Get process remaining time slice
+uint64
+sys_gettimeslice(void)
+{
+  return myproc()->time_slice;
+}

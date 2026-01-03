@@ -16,4 +16,10 @@
 #define MAXPATH      260   // maximum file path name
 #define INTERVAL     (390000000 / 200) // timer interrupt interval
 
+// Multi-level Feedback Queue (MLFQ) configuration
+#define MFQ_NQUEUES      3           // Number of queue levels
+#define MFQ_TIME_SLICE_0 1           // Time slice for queue 0 (highest priority)
+#define MFQ_TIME_SLICE_1 2           // Time slice for queue 1
+#define MFQ_TIME_SLICE_2 4           // Time slice for queue 2 (lowest priority)
+
 #endif
