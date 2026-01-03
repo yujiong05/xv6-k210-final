@@ -53,3 +53,4 @@ entry("getprocs");
 entry("getrusage");
 entry("signal");
 entry("sigkill");
+entry("settime");

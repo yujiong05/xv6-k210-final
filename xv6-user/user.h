@@ -63,6 +63,7 @@ int getqueuelevel(void);
 int gettimeslice(void);
 int getprocs(struct procinfo *info, int max_count);
 int getrusage(uint64 *utime, uint64 *stime);
+int settime(int year, int month, int day, int hour, int min, int sec);
 
 // 共享内存系统调用
 #define IPC_PRIVATE  0

@@ -40,5 +40,6 @@
 #define SYS_getrusage    36  // Get resource usage
 #define SYS_signal       37  // Register signal handler
 #define SYS_sigkill      38  // Send signal to process
+#define SYS_settime      39
 
 #endif
