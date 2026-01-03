@@ -7,6 +7,29 @@ struct rtcdate;
 struct sysinfo;
 struct procinfo;
 
+// Signal definitions
+#define SIGHUP    1
+#define SIGINT    2
+#define SIGQUIT   3
+#define SIGILL    4
+#define SIGTRAP   5
+#define SIGABRT   6
+#define SIGFPE    7
+#define SIGKILL   9
+#define SIGUSR1   10
+#define SIGSEGV   11
+#define SIGUSR2   12
+#define SIGPIPE   13
+#define SIGALRM   14
+#define SIGTERM   15
+#define SIGCONT   18
+#define SIGSTOP   19
+#define SIGTSTP   20
+
+#define SIG_DFL  ((void (*)(int))0)
+#define SIG_IGN  ((void (*)(int))1)
+#define SIG_ERR  ((void (*)(int))(-1))
+
 // system calls
 int fork(void);
 int exit(int) __attribute__((noreturn));
@@ -50,6 +73,10 @@ int shmget(int key, uint64 size, int flag);
 void* shmat(int shmid, uint64 addr, int flag);
 int shmdt(uint64 addr);
 int shmctl(int shmid, int cmd, void *buf);
+
+// Signal system calls
+void (*signal(int sig, void (*handler)(int)))(int);
+int sigkill(int pid, int sig);
 
 // ulib.c
 int stat(const char*, struct stat*);

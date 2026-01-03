@@ -51,3 +51,5 @@ entry("shmdt");
 entry("shmctl");
 entry("getprocs");
 entry("getrusage");
+entry("signal");
+entry("sigkill");

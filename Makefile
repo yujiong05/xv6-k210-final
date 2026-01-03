@@ -214,6 +214,7 @@ UPROGS=\
 	$U/_rtc\
 	$U/_ps\
 	$U/_top\
+	$U/_sigtest1\
 
 	# $U/_forktest\
 	# $U/_ln\

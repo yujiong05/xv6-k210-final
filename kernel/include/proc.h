@@ -8,6 +8,7 @@
 #include "file.h"
 #include "fat32.h"
 #include "trap.h"
+#include "signal.h"
 
 // Saved registers for kernel context switches.
 struct context {
@@ -74,6 +75,11 @@ struct proc {
   uint64 utime;                // User mode ticks
   uint64 stime;                // Kernel mode ticks
   uint64 start_time;           // Process start time (ticks since boot)
+
+  // Signal handling
+  uint64 sig_pending;          // Pending signals bitmap (bit 0 = signal 1, etc.)
+  uint64 sig_handlers[NSIG];   // Signal handler addresses
+  uint64 sig_mask;             // Signal mask (blocked signals)
 };
 
 void            reg_info(void);

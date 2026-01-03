@@ -179,6 +179,14 @@ found:
   p->stime = 0;
   p->start_time = ticks;  // Record current ticks as process start time
 
+  // Initialize signal handling
+  p->sig_pending = 0;     // No pending signals
+  p->sig_mask = 0;        // No signals blocked
+  // Set default handlers for all signals
+  for(int i = 0; i < NSIG; i++) {
+    p->sig_handlers[i] = (uint64)SIG_DFL;
+  }
+
   return p;
 }
 
@@ -214,6 +222,12 @@ freeproc(struct proc *p)
   p->utime = 0;
   p->stime = 0;
   p->start_time = 0;
+  // Reset signal handling
+  p->sig_pending = 0;
+  p->sig_mask = 0;
+  for(int i = 0; i < NSIG; i++) {
+    p->sig_handlers[i] = (uint64)SIG_DFL;
+  }
 }
 
 // Create a user page table for a given process,

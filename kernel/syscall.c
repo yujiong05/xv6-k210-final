@@ -126,6 +126,8 @@ extern uint64 sys_getqueuelevel(void);
 extern uint64 sys_gettimeslice(void);
 extern uint64 sys_getprocs(void);
 extern uint64 sys_getrusage(void);
+extern uint64 sys_signal(void);
+extern uint64 sys_sigkill(void);
 
 static uint64 (*syscalls[])(void) = {
   [SYS_fork]        sys_fork,
@@ -164,6 +166,8 @@ static uint64 (*syscalls[])(void) = {
   [SYS_gettimeslice]  sys_gettimeslice,
   [SYS_getprocs]      sys_getprocs,
   [SYS_getrusage]    sys_getrusage,
+  [SYS_signal]       sys_signal,
+  [SYS_sigkill]      sys_sigkill,
 };
 
 static char *sysnames[] = {
@@ -203,6 +207,8 @@ static char *sysnames[] = {
   [SYS_gettimeslice]  "gettimeslice",
   [SYS_getprocs]      "getprocs",
   [SYS_getrusage]    "getrusage",
+  [SYS_signal]       "signal",
+  [SYS_sigkill]      "sigkill",
 };
 
 void

@@ -12,6 +12,7 @@
 #include "include/printf.h"
 #include "include/procinfo.h"
 #include "include/vm.h"
+#include "include/signal.h"
 
 extern int exec(char *path, char **argv);
 extern struct proc proc[NPROC];
@@ -279,4 +280,74 @@ sys_getrusage(void)
 
   release(&p->lock);
   return 0;
+}
+
+// Register signal handler
+// sys_signal(int sig, void (*handler)(int))
+uint64
+sys_signal(void)
+{
+  int sig;
+  uint64 handler_addr;
+  struct proc *p = myproc();
+
+  if(argint(0, &sig) < 0)
+    return (uint64)SIG_ERR;
+  if(argaddr(1, &handler_addr) < 0)
+    return (uint64)SIG_ERR;
+
+  // Validate signal number
+  if(sig < 1 || sig >= NSIG)
+    return (uint64)SIG_ERR;
+
+  // SIGKILL and SIGSTOP cannot be caught or ignored
+  if(sig == SIGKILL || sig == SIGSTOP)
+    return (uint64)SIG_ERR;
+
+  acquire(&p->lock);
+
+  // Save old handler
+  uint64 old_handler = p->sig_handlers[sig];
+
+  // Set new handler
+  p->sig_handlers[sig] = handler_addr;
+
+  release(&p->lock);
+
+  return old_handler;
+}
+
+// Send signal to process
+// sys_sigkill(int pid, int sig)
+uint64
+sys_sigkill(void)
+{
+  int pid, sig;
+  struct proc *p;
+
+  if(argint(0, &pid) < 0)
+    return -1;
+  if(argint(1, &sig) < 0)
+    return -1;
+
+  // Validate signal number
+  if(sig < 1 || sig >= NSIG)
+    return -1;
+
+  for(p = proc; p < &proc[NPROC]; p++){
+    acquire(&p->lock);
+    if(p->pid == pid){
+      // Set pending signal bit (signal number 1 = bit 0)
+      p->sig_pending |= (1UL << (sig - 1));
+
+      // If process is sleeping, wake it up
+      if(p->state == SLEEPING){
+        p->state = RUNNABLE;
+      }
+      release(&p->lock);
+      return 0;
+    }
+    release(&p->lock);
+  }
+  return -1;  // Process not found
 }

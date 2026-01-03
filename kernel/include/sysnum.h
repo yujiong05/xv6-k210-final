@@ -38,5 +38,7 @@
 #define SYS_gettimeslice  34  // Get process remaining time slice
 #define SYS_getprocs      35  // Get process information array
 #define SYS_getrusage    36  // Get resource usage
+#define SYS_signal       37  // Register signal handler
+#define SYS_sigkill      38  // Send signal to process
 
 #endif
