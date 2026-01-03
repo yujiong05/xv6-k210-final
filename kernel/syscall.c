@@ -124,6 +124,8 @@ extern uint64 sys_shmdt(void);
 extern uint64 sys_shmctl(void);
 extern uint64 sys_getqueuelevel(void);
 extern uint64 sys_gettimeslice(void);
+extern uint64 sys_getprocs(void);
+extern uint64 sys_getrusage(void);
 
 static uint64 (*syscalls[])(void) = {
   [SYS_fork]        sys_fork,
@@ -160,6 +162,8 @@ static uint64 (*syscalls[])(void) = {
   [SYS_shmctl]      sys_shmctl,
   [SYS_getqueuelevel] sys_getqueuelevel,
   [SYS_gettimeslice]  sys_gettimeslice,
+  [SYS_getprocs]      sys_getprocs,
+  [SYS_getrusage]    sys_getrusage,
 };
 
 static char *sysnames[] = {
@@ -197,6 +201,8 @@ static char *sysnames[] = {
   [SYS_shmctl]      "shmctl",
   [SYS_getqueuelevel] "getqueuelevel",
   [SYS_gettimeslice]  "gettimeslice",
+  [SYS_getprocs]      "getprocs",
+  [SYS_getrusage]    "getrusage",
 };
 
 void

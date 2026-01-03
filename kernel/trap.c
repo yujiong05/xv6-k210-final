@@ -114,6 +114,12 @@ usertrap(void)
   // give up the CPU if this is a timer interrupt.
   // handle_time_slice() will decrement time slice and demote if needed.
   if(which_dev == 2) {
+    // Update user mode time statistics
+    if(p != 0) {
+      acquire(&p->lock);
+      p->utime++;
+      release(&p->lock);
+    }
     if(handle_time_slice() || higher_priority_ready())
       yield();
   }
@@ -195,6 +201,11 @@ kerneltrap() {
   // give up the CPU if this is a timer interrupt.
   // handle_time_slice() will decrement time slice and demote if needed.
   if(which_dev == 2 && myproc() != 0 && myproc()->state == RUNNING) {
+    // Update kernel mode time statistics
+    struct proc *p = myproc();
+    acquire(&p->lock);
+    p->stime++;
+    release(&p->lock);
     if(handle_time_slice() || higher_priority_ready()) {
       yield();
     }

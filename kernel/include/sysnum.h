@@ -36,5 +36,7 @@
 #define SYS_shmctl      32
 #define SYS_getqueuelevel 33  // Get process MLFQ queue level
 #define SYS_gettimeslice  34  // Get process remaining time slice
+#define SYS_getprocs      35  // Get process information array
+#define SYS_getrusage    36  // Get resource usage
 
 #endif

@@ -212,6 +212,8 @@ UPROGS=\
 	$U/_priotest\
 	$U/_shmtest\
 	$U/_rtc\
+	$U/_ps\
+	$U/_top\
 
 	# $U/_forktest\
 	# $U/_ln\

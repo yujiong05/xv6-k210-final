@@ -10,8 +10,11 @@
 #include "include/kalloc.h"
 #include "include/string.h"
 #include "include/printf.h"
+#include "include/procinfo.h"
+#include "include/vm.h"
 
 extern int exec(char *path, char **argv);
+extern struct proc proc[NPROC];
 
 uint64
 sys_exec(void)
@@ -192,4 +195,88 @@ uint64
 sys_gettimeslice(void)
 {
   return myproc()->time_slice;
+}
+
+// Get process information array
+// Returns: number of processes copied, or -1 on error
+uint64
+sys_getprocs(void)
+{
+  uint64 addr;
+  int max_count;
+
+  if(argaddr(0, &addr) < 0)
+    return -1;
+  if(argint(1, &max_count) < 0)
+    return -1;
+
+  struct proc *p;
+  int count = 0;
+  struct procinfo info;
+
+  // Iterate through all processes
+  for(p = proc; p < &proc[NPROC]; p++) {
+    if(count >= max_count)
+      break;
+
+    acquire(&p->lock);
+
+    // Only include non-UNUSED processes
+    if(p->state != UNUSED) {
+      info.pid = p->pid;
+      info.state = p->state;
+      info.priority = p->priority;
+      info.queue_level = p->queue_level;
+      info.time_slice = p->time_slice;
+      info.ticks_used = p->ticks_used;
+      info.utime = p->utime;
+      info.stime = p->stime;
+      info.start_time = p->start_time;
+      info.sz = p->sz;
+      safestrcpy(info.name, p->name, sizeof(info.name));
+
+      release(&p->lock);
+
+      // Copy to user space
+      if(copyout2(addr + count * sizeof(info), (char*)&info, sizeof(info)) < 0) {
+        return -1;
+      }
+      count++;
+    } else {
+      release(&p->lock);
+    }
+  }
+
+  return count;
+}
+
+// Get resource usage for the current process
+// Returns: 0 on success, -1 on error
+uint64
+sys_getrusage(void)
+{
+  uint64 utime_addr, stime_addr;
+  struct proc *p = myproc();
+
+  if(argaddr(0, &utime_addr) < 0)
+    return -1;
+  if(argaddr(1, &stime_addr) < 0)
+    return -1;
+
+  acquire(&p->lock);
+
+  // Copy utime to user space
+  if(utime_addr != 0 && copyout2(utime_addr, (char*)&p->utime, sizeof(p->utime)) < 0) {
+    release(&p->lock);
+    return -1;
+  }
+
+  // Copy stime to user space
+  if(stime_addr != 0 && copyout2(stime_addr, (char*)&p->stime, sizeof(p->stime)) < 0) {
+    release(&p->lock);
+    return -1;
+  }
+
+  release(&p->lock);
+  return 0;
 }

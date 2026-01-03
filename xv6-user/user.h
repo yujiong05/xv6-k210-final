@@ -5,6 +5,7 @@
 struct stat;
 struct rtcdate;
 struct sysinfo;
+struct procinfo;
 
 // system calls
 int fork(void);
@@ -37,6 +38,8 @@ int setpriority(int prio);
 int getpriority(void);
 int getqueuelevel(void);
 int gettimeslice(void);
+int getprocs(struct procinfo *info, int max_count);
+int getrusage(uint64 *utime, uint64 *stime);
 
 // 共享内存系统调用
 #define IPC_PRIVATE  0

@@ -13,6 +13,7 @@
 #include "include/file.h"
 #include "include/trap.h"
 #include "include/vm.h"
+#include "include/timer.h"
 
 
 struct cpu cpus[NCPU];
@@ -22,6 +23,7 @@ struct proc proc[NPROC];
 struct proc *initproc;
 
 int nextpid = 1;
+uint64 ticks_start = 0;  // System start time (ticks)
 struct spinlock pid_lock;
 
 extern void forkret(void);
@@ -172,6 +174,11 @@ found:
   p->time_slice = 0;         // Will be set by scheduler when first run
   p->ticks_used = 0;
 
+  // Initialize time statistics
+  p->utime = 0;
+  p->stime = 0;
+  p->start_time = ticks;  // Record current ticks as process start time
+
   return p;
 }
 
@@ -203,6 +210,10 @@ freeproc(struct proc *p)
   p->queue_level = 0;
   p->time_slice = 0;
   p->ticks_used = 0;
+  // Reset time statistics
+  p->utime = 0;
+  p->stime = 0;
+  p->start_time = 0;
 }
 
 // Create a user page table for a given process,

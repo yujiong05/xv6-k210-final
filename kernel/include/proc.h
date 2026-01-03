@@ -69,6 +69,11 @@ struct proc {
   int queue_level;             // Current queue level (0=highest, 2=lowest)
   int time_slice;              // Remaining time slices in current queue
   int ticks_used;              // Total ticks used by this process
+
+  // Process time statistics
+  uint64 utime;                // User mode ticks
+  uint64 stime;                // Kernel mode ticks
+  uint64 start_time;           // Process start time (ticks since boot)
 };
 
 void            reg_info(void);
