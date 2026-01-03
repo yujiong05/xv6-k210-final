@@ -66,8 +66,8 @@ else
 RUSTSBI = ./bootloader/SBI/sbi-qemu
 endif
 
-# TOOLPREFIX	:= riscv64-unknown-elf-
-TOOLPREFIX	:= riscv64-linux-gnu-
+TOOLPREFIX	:= riscv64-unknown-elf-
+# TOOLPREFIX	:= riscv64-linux-gnu-
 CC = $(TOOLPREFIX)gcc
 AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld
@@ -208,6 +208,7 @@ UPROGS=\
 	$U/_cowtest\
 	$U/_priotest\
 	$U/_shmtest\
+	$U/_rtc\
 
 	# $U/_forktest\
 	# $U/_ln\
