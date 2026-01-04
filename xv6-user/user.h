@@ -75,6 +75,19 @@ void* shmat(int shmid, uint64 addr, int flag);
 int shmdt(uint64 addr);
 int shmctl(int shmid, int cmd, void *buf);
 
+// mmap system calls
+#define PROT_READ   0x1
+#define PROT_WRITE  0x2
+#define PROT_EXEC   0x4
+
+#define MAP_SHARED  0x01
+#define MAP_PRIVATE 0x02
+#define MAP_FIXED   0x04
+#define MAP_ANONYMOUS 0x08
+
+void* mmap(void *addr, uint length, int prot, int flags, int fd, uint offset);
+int munmap(void *addr, uint length);
+
 // Signal system calls
 void (*signal(int sig, void (*handler)(int)))(int);
 int sigkill(int pid, int sig);

@@ -21,6 +21,7 @@ OBJS += \
   $K/string.o \
   $K/main.o \
   $K/vm.o \
+  $K/vma.o \
   $K/proc.o \
   $K/swtch.o \
   $K/trampoline.o \
@@ -220,6 +221,7 @@ UPROGS=\
 	$U/_cachetest\
 	$U/_lazytest\
 	$U/_mlfqtest\
+	$U/_mmaptest\
 
 	# $U/_forktest\
 	# $U/_ln\

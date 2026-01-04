@@ -13,6 +13,8 @@
 #include "include/procinfo.h"
 #include "include/vm.h"
 #include "include/signal.h"
+#include "include/vma.h"
+#include "include/file.h"
 
 extern int exec(char *path, char **argv);
 extern struct proc proc[NPROC];
@@ -365,4 +367,111 @@ sys_sigkill(void)
     release(&p->lock);
   }
   return -1;  // Process not found
+}
+
+// mmap system call
+// void* mmap(void *addr, uint length, int prot, int flags, int fd, uint offset)
+uint64
+sys_mmap(void)
+{
+  uint64 addr, length, offset;
+  int prot, flags, fd;
+  struct proc *p = myproc();
+  struct file *f = 0;
+
+  if(argaddr(0, &addr) < 0)
+    return -1;
+  if(argaddr(1, &length) < 0)
+    return -1;
+  if(argint(2, &prot) < 0)
+    return -1;
+  if(argint(3, &flags) < 0)
+    return -1;
+  if(argint(4, &fd) < 0)
+    return -1;
+  if(argaddr(5, &offset) < 0)
+    return -1;
+
+  // Validate arguments
+  if(length == 0 || length >= MAXUVA)
+    return -1;
+
+  // Check for invalid flag combinations
+  if((flags & MAP_SHARED) && (flags & MAP_PRIVATE))
+    return -1;  // Cannot specify both
+
+  // Handle file mapping
+  if(!(flags & MAP_ANONYMOUS)) {
+    if(fd < 0 || fd >= NOFILE || p->ofile[fd] == 0)
+      return -1;
+
+    f = p->ofile[fd];
+    filedup(f);  // Increase file reference count
+  }
+
+  // Find a suitable virtual address
+  uint64 map_addr;
+  if(flags & MAP_FIXED) {
+    // User specified exact address
+    if(addr == 0 || addr >= MAXUVA)
+      goto err;
+    map_addr = PGROUNDDOWN(addr);
+  } else {
+    // Find free address range
+    if(vma_find_free_range(&p->vma_manager, addr, length, &map_addr) < 0)
+      goto err;
+  }
+
+  // Insert VMA
+  if(vma_insert(&p->vma_manager, map_addr, length, offset,
+                prot, flags, f) < 0)
+    goto err;
+
+  return map_addr;
+
+err:
+  if(f)
+    fileclose(f);
+  return -1;
+}
+
+// munmap system call
+// int munmap(void *addr, uint length)
+uint64
+sys_munmap(void)
+{
+  uint64 addr, length;
+  struct proc *p = myproc();
+  struct vma *vma;
+  uint64 va, end;
+  int npages;
+
+  if(argaddr(0, &addr) < 0)
+    return -1;
+  if(argaddr(1, &length) < 0)
+    return -1;
+
+  if(addr == 0 || length == 0)
+    return -1;
+
+  // Find VMA containing this address
+  vma = vma_lookup(&p->vma_manager, addr);
+  if(vma == 0)
+    return -1;
+
+  // Calculate page-aligned range
+  va = PGROUNDDOWN(addr);
+  end = PGROUNDUP(addr + length);
+  npages = (end - va) / PGSIZE;
+
+  // Unmap pages from page table
+  uvmunmap(p->pagetable, va, npages, 0);
+  uvmunmap(p->kpagetable, va, npages, 0);
+
+  // If entire VMA is unmapped, remove it
+  if(addr <= vma->addr && addr + length >= vma->addr + vma->length) {
+    vma_remove(&p->vma_manager, vma->addr, vma->length);
+  }
+
+  return 0;
 }

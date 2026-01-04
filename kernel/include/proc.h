@@ -9,6 +9,7 @@
 #include "fat32.h"
 #include "trap.h"
 #include "signal.h"
+#include "vma.h"
 
 // Saved registers for kernel context switches.
 struct context {
@@ -80,6 +81,9 @@ struct proc {
   uint64 sig_pending;          // Pending signals bitmap (bit 0 = signal 1, etc.)
   uint64 sig_handlers[NSIG];   // Signal handler addresses
   uint64 sig_mask;             // Signal mask (blocked signals)
+
+  // Virtual Memory Area (VMA) management for mmap
+  struct vma_manager vma_manager;  // VMA 管理器
 };
 
 void            reg_info(void);

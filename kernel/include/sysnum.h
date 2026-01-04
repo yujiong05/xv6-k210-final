@@ -41,5 +41,7 @@
 #define SYS_signal       37  // Register signal handler
 #define SYS_sigkill      38  // Send signal to process
 #define SYS_settime      39
+#define SYS_mmap         40  // Memory mapping
+#define SYS_munmap       41  // Unmap memory
 
 #endif

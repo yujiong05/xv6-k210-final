@@ -54,3 +54,5 @@ entry("getrusage");
 entry("signal");
 entry("sigkill");
 entry("settime");
+entry("mmap");
+entry("munmap");

@@ -189,6 +189,9 @@ found:
     p->sig_handlers[i] = (uint64)SIG_DFL;
   }
 
+  // Initialize VMA manager
+  vma_init(&p->vma_manager);
+
   return p;
 }
 
@@ -230,6 +233,9 @@ freeproc(struct proc *p)
   for(int i = 0; i < NSIG; i++) {
     p->sig_handlers[i] = (uint64)SIG_DFL;
   }
+
+  // Cleanup VMA
+  vma_cleanup(&p->vma_manager);
 }
 
 // Create a user page table for a given process,
@@ -411,6 +417,9 @@ fork(void)
       np->ofile[i] = filedup(p->ofile[i]);
   np->cwd = edup(p->cwd);
 
+  // Copy VMA list from parent to child
+  vma_copy(&np->vma_manager, &p->vma_manager);
+
   safestrcpy(np->name, p->name, sizeof(p->name));
 
   pid = np->pid;
@@ -470,6 +479,9 @@ exit(int status)
 
   eput(p->cwd);
   p->cwd = 0;
+
+  // Cleanup VMA (close files and free mappings)
+  vma_cleanup(&p->vma_manager);
 
   // we might re-parent a child to init. we can't be precise about
   // waking up init, since we can't acquire its lock once we've

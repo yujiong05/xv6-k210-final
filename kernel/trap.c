@@ -14,6 +14,7 @@
 #include "include/timer.h"
 #include "include/disk.h"
 #include "include/vm.h"
+#include "include/vma.h"
 
 extern char trampoline[], uservec[], userret[];
 
@@ -102,7 +103,38 @@ usertrap(void)
       goto done_pf;
     }
 
-    // 2) lazy allocation：只允许补"已通过 sbrk 扩过的范围"
+    // 2) VMA (mmap) 检查：检查是否在 mmap 区域
+    struct vma *vma = vma_lookup(&p->vma_manager, a);
+    if(vma != 0) {
+      // 在 VMA 区域，分配页面
+      // 检查权限
+      int perm = PTE_U;
+      if(vma->prot & PROT_READ)
+        perm |= PTE_R;
+      if(vma->prot & PROT_WRITE)
+        perm |= PTE_W;
+      if(vma->prot & PROT_EXEC)
+        perm |= PTE_X;
+
+      // MAP_PRIVATE 使用 COW
+      if(vma->flags & MAP_PRIVATE)
+        perm = (perm | PTE_COW) & ~PTE_W;
+
+      // 懒惰分配页面
+      if(lazy_alloc(p->pagetable, p->kpagetable, a) < 0) {
+        p->killed = 1;
+        goto done_pf;
+      }
+
+      // 更新页面权限
+      pte_t *pte = walk(p->pagetable, a, 0);
+      if(pte != 0) {
+        *pte = (*pte & ~(PTE_R | PTE_W | PTE_X)) | perm;
+      }
+      goto done_pf;
+    }
+
+    // 3) lazy allocation：只允许补"已通过 sbrk 扩过的范围"
     if(a >= p->sz || a >= MAXUVA){
       p->killed = 1;
       goto done_pf;
