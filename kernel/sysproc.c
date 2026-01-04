@@ -93,15 +93,30 @@ sys_wait(void)
 uint64
 sys_sbrk(void)
 {
-  int addr;
   int n;
-
   if(argint(0, &n) < 0)
-    return -1;
-  addr = myproc()->sz;
-  if(growproc(n) < 0)
-    return -1;
-  return addr;
+    return (uint64)-1;
+
+  struct proc *p = myproc();
+  uint64 oldsz = p->sz;
+
+  uint64 newsz;
+
+  if(n >= 0){
+    newsz = oldsz + (uint64)n;
+    if(newsz < oldsz)            // overflow
+      return (uint64)-1;
+    if(newsz >= MAXUVA)          // 上界（按你工程里的宏为准）
+      return (uint64)-1;
+    p->sz = newsz;               // lazy: 只记账，不分配
+  } else {
+    uint64 dec = (uint64)(-n);
+    if(dec > oldsz)              // underflow
+      return (uint64)-1;
+    newsz = oldsz - dec;
+    p->sz = uvmdealloc(p->pagetable, p->kpagetable, oldsz, newsz);
+  }
+  return oldsz;
 }
 
 uint64

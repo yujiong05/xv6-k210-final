@@ -218,6 +218,8 @@ UPROGS=\
 	$U/_sigtest2\
 	$U/_settimeddemo\
 	$U/_cachetest\
+	$U/_lazytest\
+	$U/_mlfqtest\
 
 	# $U/_forktest\
 	# $U/_ln\

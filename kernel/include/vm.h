@@ -29,8 +29,12 @@ pagetable_t     proc_kpagetable(void);
 void            kvmfreeusr(pagetable_t kpt);
 void            kvmfree(pagetable_t kpagetable, int stack_free);
 uint64          kwalkaddr(pagetable_t pagetable, uint64 va);
-int             copyout2(uint64 dstva, char *src, uint64 len);
-int             copyin2(char *dst, uint64 srcva, uint64 len);
+int             cow_alloc(pagetable_t pagetable, uint64 va);
+int             lazy_alloc(pagetable_t pagetable, pagetable_t kpagetable, uint64 va);
+void            uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free);
+int             is_cow_page(pagetable_t pagetable, uint64 va);
+int             copyout2(uint64 dstva, void *src, uint64 len);
+int             copyin2(void *dst, uint64 srcva, uint64 len);
 int             copyinstr2(char *dst, uint64 srcva, uint64 max);
 void            vmprint(pagetable_t pagetable);
 

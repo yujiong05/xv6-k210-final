@@ -16,6 +16,7 @@
 #include "include/vm.h"
 #include "include/disk.h"
 #include "include/buf.h"
+#include "include/defs.h"
 
 // 共享内存初始化函数
 void shm_init(void);

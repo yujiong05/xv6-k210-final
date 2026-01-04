@@ -200,10 +200,10 @@ uint64          kvmpa(uint64);
 void            kvmmap(uint64, uint64, uint64, int);
 int             mappages(pagetable_t, uint64, uint64, uint64, int);
 pagetable_t     uvmcreate(void);
-void            uvminit(pagetable_t, uchar *, uint);
-uint64          uvmalloc(pagetable_t, uint64, uint64);
-uint64          uvmdealloc(pagetable_t, uint64, uint64);
-int             uvmcopy(pagetable_t, pagetable_t, uint64);
+void            uvminit(pagetable_t, pagetable_t, uchar *, uint);
+uint64          uvmalloc(pagetable_t, pagetable_t, uint64, uint64);
+uint64          uvmdealloc(pagetable_t, pagetable_t, uint64, uint64);
+int             uvmcopy(pagetable_t, pagetable_t, pagetable_t, uint64);
 void            uvmfree(pagetable_t, uint64);
 void            uvmunmap(pagetable_t, uint64, uint64, int);
 void            uvmclear(pagetable_t, uint64);
@@ -211,6 +211,9 @@ uint64          walkaddr(pagetable_t, uint64);
 int             copyout(pagetable_t, uint64, char *, uint64);
 int             copyin(pagetable_t, char *, uint64, uint64);
 int             copyinstr(pagetable_t, char *, uint64, uint64);
+int             lazy_alloc(pagetable_t pagetable, pagetable_t kpagetable, uint64 va);
+int             is_cow_page(pagetable_t pagetable, uint64 va);
+int             cow_alloc(pagetable_t pagetable, uint64 va);
 
 // virtio_disk.c
 void            virtio_disk_init(void);

@@ -89,25 +89,33 @@ usertrap(void)
     intr_on();
     syscall();
   }
-  else if((which_dev = devintr()) != 0){
+   else if((which_dev = devintr()) != 0){
     // ok
-  }
-  else if(r_scause() == 13 || r_scause() == 15){
-    // 页错误 - 检查是否是COW页面
+  } else if(r_scause() == 13 || r_scause() == 15){
     uint64 va = r_stval();
-    if(is_cow_page(p->pagetable, va)) {
-      // 这是COW页错误，尝试分配一个新页面
-      if(cow_alloc(p->pagetable, va) < 0) {
-        printf("\nusertrap(): cow_alloc failed for va=%p pid=%d %s\n", va, p->pid, p->name);
-        printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+    uint64 a  = PGROUNDDOWN(va);
+
+    // 1) COW 优先：通常只有写 fault（15）需要 COW 修复
+    if(r_scause() == 15 && is_cow_page(p->pagetable, a)){
+      if(cow_alloc(p->pagetable, a) < 0)
         p->killed = 1;
-      }
-      // 如果cow_alloc成功，直接返回用户空间重试
-    } else {
-      printf("\nusertrap(): unexpected page fault scause %p pid=%d %s\n", r_scause(), p->pid, p->name);
-      printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
-      p->killed = 1;
+      goto done_pf;
     }
+
+    // 2) lazy allocation：只允许补"已通过 sbrk 扩过的范围"
+    if(a >= p->sz || a >= MAXUVA){
+      p->killed = 1;
+      goto done_pf;
+    }
+
+    if(lazy_alloc(p->pagetable, p->kpagetable, a) < 0){
+      p->killed = 1; // OOM 或映射失败
+      goto done_pf;
+    }
+
+  done_pf:
+  ;
+    // 正常返回，让用户态重试该指令
   }
   else {
     printf("\nusertrap(): unexpected scause %p pid=%d %s\n", r_scause(), p->pid, p->name);
