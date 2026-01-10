@@ -1,0 +1,26 @@
+为把“沙箱（seccomp-lite）”做成精确到行号、可直接套用你仓库的改动，我需要你提供这些文件的完整代码（按优先级从高到低）。这些也是 xv6/MIT 6.S081 在“新增 syscall + mask/trace 类功能”时通常会改到的核心文件集合。
+必须提供（没有这些我没法给你做可直接打补丁的版本）
+内核侧（Kernel）
+kernel/include/sysnum.h
+你 syscall 号定义在这里；我们要加 SYS_sandbox=42 并确保不冲突。
+kernel/syscall.c（整个文件）
+需要看：syscall() 分发函数、syscalls[] 表、sysnames[]（你提到有），以及 trace 插桩写法，方便我们按同一风格插入沙箱检查点。
+这是“安全边界”的唯一关键插入点。
+kernel/proc.h（整个文件）
+需要看 struct proc 当前字段（你已有 trace mask 字段也在这里），我们要加 sandbox_on / sandbox_action / allow_mask[]，并确认类型/宏风格一致。
+kernel/proc.c（整个文件，至少要包含 fork()、allocproc()、freeproc() 段落）
+我们要确保 fork 继承沙箱策略（像 trace mask 那样继承），并确认进程初始化时字段如何清零/初始化。
+kernel/sysproc.c（或你实现 sys_trace() 的那个文件，整份）
+我们要在同一风格下新增 sys_sandbox()：参数解析（argint/argaddr）、copyin() 把用户 mask 拷进内核 proc。
+用户态（User）
+xv6-user/user.h（整份）
+新 syscall 的用户态原型要加在这。
+xv6-user/usys.pl（整份）
+要加 entry("sandbox"); 生成 syscall stub。
+顶层 Makefile（整份）
+需要把 $U/sandbox 加到 UPROGS；还要看你项目如何把额外文件打进 fs.img（我们要把 /etc/policy*.txt 一起打包进去）。
+强烈建议提供（能让演示更漂亮、少走弯路）
+xv6-user/strace.c（整份）
+用来复用/对齐 syscall 名称数组或输出格式（你已有 sysnames），这样 sandbox 命令做“名称→编号”映射会更稳、更一致。
+xv6-user/Makefile（如果你有的话）或与用户程序编译相关的 include 路径配置
+用来确认用户态能否直接 #include "sysnum.h"（少复制一份 syscall 号表）。回答所有问题，提供要求的全部代码，写在Working/CopilotWorking里面你自己新建的一个md文件NeedCode1.md中，NeedCode1.md中已有一部分总结，你可以审查现有的总结，并修改，补齐剩下的部分

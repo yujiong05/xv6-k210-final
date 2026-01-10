@@ -1,0 +1,23 @@
+# policy_sh.txt
+# A practical (not minimal) allowlist for running the shell.
+fork
+exec
+wait
+exit
+open
+read
+write
+close
+fstat
+chdir
+dup
+pipe
+mkdir
+unlink
+link
+mknod
+getpid
+sbrk
+sleep
+uptime
+kill

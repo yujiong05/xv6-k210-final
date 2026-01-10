@@ -1,0 +1,48 @@
+#ifndef __SYSNUM_H
+#define __SYSNUM_H
+
+// System call numbers
+#define SYS_fork         1
+#define SYS_exit         2
+#define SYS_wait         3
+#define SYS_pipe         4
+#define SYS_read         5
+#define SYS_kill         6
+#define SYS_exec         7
+#define SYS_fstat        8
+#define SYS_chdir        9
+#define SYS_dup         10
+#define SYS_getpid      11
+#define SYS_sbrk        12
+#define SYS_sleep       13
+#define SYS_uptime      14
+#define SYS_open        15
+#define SYS_write       16
+#define SYS_remove      17
+#define SYS_trace       18
+#define SYS_sysinfo     19
+#define SYS_mkdir       20
+#define SYS_close       21
+#define SYS_test_proc   22
+#define SYS_dev         23
+#define SYS_readdir     24
+#define SYS_getcwd      25
+#define SYS_rename      26
+#define SYS_setpriority 27
+#define SYS_getpriority 28
+#define SYS_shmget      29
+#define SYS_shmat       30
+#define SYS_shmdt       31
+#define SYS_shmctl      32
+#define SYS_getqueuelevel 33  // Get process MLFQ queue level
+#define SYS_gettimeslice  34  // Get process remaining time slice
+#define SYS_getprocs      35  // Get process information array
+#define SYS_getrusage    36  // Get resource usage
+#define SYS_signal       37  // Register signal handler
+#define SYS_sigkill      38  // Send signal to process
+#define SYS_settime      39
+#define SYS_mmap         40  // Memory mapping
+#define SYS_munmap       41  // Unmap memory
+#define SYS_sandbox      42  // Seccomp-lite sandbox control
+
+#endif
