@@ -28,6 +28,7 @@ OBJS += \
   $K/trap.o \
   $K/syscall.o \
   $K/sysproc.o \
+  $K/sandbox.o \
   $K/shm.o \
   $K/bio.o \
   $K/sleeplock.o \
@@ -222,6 +223,7 @@ UPROGS=\
 	$U/_lazytest\
 	$U/_mlfqtest\
 	$U/_mmaptest\
+	$U/_sandbox\
 
 	# $U/_forktest\
 	# $U/_ln\
@@ -247,6 +249,14 @@ fs: $(UPROGS)
 	@for file in $$( ls $U/_* ); do \
 		sudo cp $$file $(dst)/$${file#$U/_} && sudo touch -r $$file $(dst)/$${file#$U/_};\
 		sudo cp $$file $(dst)/bin/$${file#$U/_} && sudo touch -r $$file $(dst)/bin/$${file#$U/_}; done
+	@if [ ! -d "$(dst)/etc" ]; then sudo mkdir $(dst)/etc; fi
+	@if [ -d "etc" ]; then \
+		for f in etc/policy_*.txt; do \
+			if [ -f "$$f" ]; then \
+				sudo cp $$f $(dst)/etc/ && sudo touch -r $$f $(dst)/etc/$$(basename $$f); \
+			fi; \
+		done; \
+	fi
 	@sudo umount $(dst)
 
 # Write mounted sdcard

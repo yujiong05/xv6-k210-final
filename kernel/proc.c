@@ -189,6 +189,11 @@ found:
     p->sig_handlers[i] = (uint64)SIG_DFL;
   }
 
+  // Initialize sandbox (seccomp-lite)
+  p->sandbox_on = 0;
+  p->sandbox_action = 0;
+  memset(p->allow_mask, 0, sizeof(p->allow_mask));
+
   // Initialize VMA manager
   vma_init(&p->vma_manager);
 
@@ -233,6 +238,11 @@ freeproc(struct proc *p)
   for(int i = 0; i < NSIG; i++) {
     p->sig_handlers[i] = (uint64)SIG_DFL;
   }
+
+  // Clear sandbox state
+  p->sandbox_on = 0;
+  p->sandbox_action = 0;
+  memset(p->allow_mask, 0, sizeof(p->allow_mask));
 
   // Cleanup VMA
   vma_cleanup(&p->vma_manager);
@@ -401,6 +411,11 @@ fork(void)
 
   // copy tracing mask from parent.
   np->tmask = p->tmask;
+
+  // inherit sandbox policy (recommended)
+  np->sandbox_on = p->sandbox_on;
+  np->sandbox_action = p->sandbox_action;
+  memmove(np->allow_mask, p->allow_mask, sizeof(np->allow_mask));
 
   // copy priority from parent
   np->priority = p->priority;

@@ -1,0 +1,8 @@
+# policy_nofile.txt
+# Deliberately NOT allowing open().
+read
+write
+close
+fstat
+exit
+sbrk

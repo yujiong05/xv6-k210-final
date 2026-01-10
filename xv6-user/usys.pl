@@ -56,3 +56,4 @@ entry("sigkill");
 entry("settime");
 entry("mmap");
 entry("munmap");
+entry("sandbox");

@@ -1,0 +1,21 @@
+# like policy_sh, but without remove
+fork
+exec
+wait
+exit
+pipe
+read
+write
+close
+open
+fstat
+dup
+chdir
+getpid
+sbrk
+sleep
+uptime
+getcwd
+readdir
+mkdir
+rename
