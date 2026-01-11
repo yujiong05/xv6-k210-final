@@ -1,9 +1,0 @@
-# policy_cat.txt
-# Allow cat-like read-only programs.
-open
-read
-write
-close
-fstat
-exit
-sbrk
