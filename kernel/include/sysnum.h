@@ -43,5 +43,6 @@
 #define SYS_settime      39
 #define SYS_mmap         40  // Memory mapping
 #define SYS_munmap       41  // Unmap memory
+#define SYS_sandbox      42  // Seccomp-lite sandbox control
 
 #endif

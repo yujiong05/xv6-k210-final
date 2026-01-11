@@ -1,0 +1,7 @@
+# minimal policy for cat
+open
+read
+write
+close
+fstat
+exit

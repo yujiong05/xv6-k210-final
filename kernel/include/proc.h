@@ -82,6 +82,11 @@ struct proc {
   uint64 sig_handlers[NSIG];   // Signal handler addresses
   uint64 sig_mask;             // Signal mask (blocked signals)
 
+  // Sandbox policy (seccomp-lite)
+  int sandbox_on;              // 1: sandbox enabled, 0: disabled
+  int sandbox_action;          // 0: deny(-1), future: send signal, etc.
+  uint32 allow_mask[4];        // 128-bit allow mask for syscall numbers
+
   // Virtual Memory Area (VMA) management for mmap
   struct vma_manager vma_manager;  // VMA 管理器
 };

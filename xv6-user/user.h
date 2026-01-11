@@ -75,6 +75,9 @@ void* shmat(int shmid, uint64 addr, int flag);
 int shmdt(uint64 addr);
 int shmctl(int shmid, int cmd, void *buf);
 
+// 沙箱系统调用
+int sandbox(int on, int action, uint32 *allow_mask, int words);
+
 // mmap system calls
 #define PROT_READ   0x1
 #define PROT_WRITE  0x2

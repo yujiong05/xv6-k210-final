@@ -131,6 +131,7 @@ extern uint64 sys_sigkill(void);
 extern uint64 sys_settime(void);
 extern uint64 sys_mmap(void);
 extern uint64 sys_munmap(void);
+extern uint64 sys_sandbox(void);
 
 static uint64 (*syscalls[])(void) = {
   [SYS_fork]        sys_fork,
@@ -174,6 +175,7 @@ static uint64 (*syscalls[])(void) = {
   [SYS_settime]      sys_settime,
   [SYS_mmap]         sys_mmap,
   [SYS_munmap]       sys_munmap,
+  [SYS_sandbox]      sys_sandbox,
 };
 
 static char *sysnames[] = {
@@ -218,6 +220,7 @@ static char *sysnames[] = {
   [SYS_settime]      "settime",
   [SYS_mmap]         "mmap",
   [SYS_munmap]       "munmap",
+  [SYS_sandbox]      "sandbox",
 };
 
 void
@@ -227,9 +230,31 @@ syscall(void)
   struct proc *p = myproc();
 
   num = p->trapframe->a7;
+
+  // Sandbox deny point: if enabled and syscall not in allow mask, deny.
+  // action=0 -> return -1; action=1 -> mark killed then return -1.
+  if (num > 0 && num < NELEM(syscalls) && p->sandbox_on && num != SYS_sandbox) {
+    int word = num / 32;
+    int bit  = num % 32;
+    int allowed = 0;
+    if (word >= 0 && word < 4) {
+      allowed = (p->allow_mask[word] >> bit) & 1;
+    }
+    if (!allowed) {
+      if (p->sandbox_action == 1) {
+        p->killed = 1;
+      }
+      p->trapframe->a0 = -1;
+      if ((p->tmask & (1 << num)) != 0) {
+        printf("pid %d: %s -> %d\n", p->pid, sysnames[num], p->trapframe->a0);
+      }
+      return;
+    }
+  }
+
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     p->trapframe->a0 = syscalls[num]();
-        // trace
+    // trace
     if ((p->tmask & (1 << num)) != 0) {
       printf("pid %d: %s -> %d\n", p->pid, sysnames[num], p->trapframe->a0);
     }
