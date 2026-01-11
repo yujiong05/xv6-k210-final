@@ -1,0 +1,22 @@
+# policy for sh (xv6-k210 variant)
+fork
+exec
+wait
+exit
+pipe
+read
+write
+close
+open
+fstat
+dup
+chdir
+getpid
+sbrk
+sleep
+uptime
+getcwd
+readdir
+mkdir
+remove
+rename
